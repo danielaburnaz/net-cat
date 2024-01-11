@@ -4,10 +4,23 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"os"
 )
 
 func main() {
-	ln, err := net.Listen("tcp", ":8989")
+	arg := os.Args
+
+	port := ""
+	if len(arg) == 1{
+		port = "8989"
+	} else if len(arg) != 2{
+		log.Println("[USAGE]: ./TCPChat $port")
+		return
+	} else {
+		port = arg[1]
+	}
+
+	ln, err := net.Listen("tcp", ":" + port)
 	if err != nil {
 		panic(err)
 	}
@@ -21,20 +34,26 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	log.Println("User joined")
 	scanner := bufio.NewScanner(conn)
+	conn.Write([]byte("[ENTER YOUR NAME]: "))
+	scanner.Scan()
+	username := scanner.Text()
+	log.Println(username + " joined")
 	for scanner.Scan() {
-		log.Println(scanner.Text())
-		conn.Write([]byte(reverseString(scanner.Text())))
-		conn.Write([]byte("\n"))
+		if scanner.Text() != "" {
+			log.Println(username + ": " + scanner.Text())
+			// conn.Write([]byte(reverseString(scanner.Text())))
+			conn.Write([]byte(username + ": " + scanner.Text()))
+			conn.Write([]byte("\n"))
+		}
 	}
-	log.Println("User left")
+	log.Println( username +" left")
 }
 
-func reverseString(s string) string {
-	r := []rune(s)
-	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
-		r[i], r[j] = r[j], r[i]
-	}
-	return string(r)
-}
+// func reverseString(s string) string {
+// 	r := []rune(s)
+// 	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
+// 		r[i], r[j] = r[j], r[i]
+// 	}
+// 	return string(r)
+// }
