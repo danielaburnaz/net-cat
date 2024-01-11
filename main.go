@@ -2,58 +2,91 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"os"
+	"strings"
+	"time"
 )
+
+const (
+	ENTER_NAME = "[ENTER YOUR NAME]: "
+)
+
+var connections []net.Conn
 
 func main() {
 	arg := os.Args
 
 	port := ""
-	if len(arg) == 1{
+	switch len(arg) {
+	case 1:
 		port = "8989"
-	} else if len(arg) != 2{
+	case 2:
+		port = arg[1]
+	default:
 		log.Println("[USAGE]: ./TCPChat $port")
 		return
-	} else {
-		port = arg[1]
 	}
 
-	ln, err := net.Listen("tcp", ":" + port)
+	ln, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("Listening on the port :%s\n", port)
+
+	ch := make(chan string)
+	go channelMessages(ch)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Println(err)
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, ch)
+		connections = append(connections, conn)
 	}
 }
 
-func handleConnection(conn net.Conn) {
-	scanner := bufio.NewScanner(conn)
-	conn.Write([]byte("[ENTER YOUR NAME]: "))
-	scanner.Scan()
-	username := scanner.Text()
-	log.Println(username + " joined")
-	for scanner.Scan() {
-		if scanner.Text() != "" {
-			log.Println(username + ": " + scanner.Text())
-			// conn.Write([]byte(reverseString(scanner.Text())))
-			conn.Write([]byte(username + ": " + scanner.Text()))
-			conn.Write([]byte("\n"))
+func channelMessages(ch chan string) {
+	for msg := range ch {
+		for _, conn := range connections {
+			conn.Write([]byte(msg))
 		}
 	}
-	log.Println( username +" left")
 }
 
-// func reverseString(s string) string {
-// 	r := []rune(s)
-// 	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
-// 		r[i], r[j] = r[j], r[i]
-// 	}
-// 	return string(r)
-// }
+func handleConnection(conn net.Conn, ch chan string) {
+	scanner := bufio.NewScanner(conn)
+	username := name(conn, scanner)
+
+	ch <- fmt.Sprintf("%s joined\n", username)
+
+	for scanner.Scan() {
+		if scanner.Text() != "" {
+			// fmt.Print(format(username, scanner.Text()))
+
+			ch <- format(username, scanner.Text())
+		}
+	}
+	ch <- fmt.Sprintf("%s left\n", username)
+
+}
+
+func format(username string, text string) string {
+	time := time.Now().Format(time.DateTime)
+	return fmt.Sprintf("[%s][%s]: %s\n", time, username, text)
+}
+
+func name(conn net.Conn, scanner *bufio.Scanner) string {
+	conn.Write([]byte(ENTER_NAME))
+
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) != "" {
+			return scanner.Text()
+		}
+		conn.Write([]byte(ENTER_NAME))
+
+	}
+	return "unknown"
+}

@@ -11,13 +11,15 @@ func main() {
 	arg := os.Args
 	
 	port := ""
-	if len(arg) == 2{
+
+	switch len(arg){
+	case 2:		
 		port = "8989"
-	} else if len(arg) != 3{
+	case 3:
+		port = arg[2]
+	default:
 		log.Println("Usage: go run . $IP [$port]")
 		return
-	} else {
-		port = arg[2]
 	}
 	
 	ip := arg[1]
