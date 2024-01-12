@@ -16,6 +16,8 @@ const (
 
 var connections []net.Conn
 
+// var maxConn = make(chan struct{}, 3)
+
 func main() {
 	arg := os.Args
 
@@ -34,7 +36,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Printf("Listening on the port :%s\n", port)
+
+	// for i := 0; i < 3; i++ {
+	// 	maxConn <- struct{}{}
+	// }
 
 	ch := make(chan string)
 	go channelMessages(ch)
@@ -43,8 +50,14 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
-		go handleConnection(conn, ch)
-		connections = append(connections, conn)
+		switch {
+		case len(connections) < 3:
+			go handleConnection(conn, ch)
+			connections = append(connections, conn)
+		default:
+			ch <- "User tried to join but max connection reached\n"
+			conn.Close()
+		}
 	}
 }
 
@@ -69,8 +82,11 @@ func handleConnection(conn net.Conn, ch chan string) {
 			ch <- format(username, scanner.Text())
 		}
 	}
-	ch <- fmt.Sprintf("%s left\n", username)
 
+	// maxConn <- struct{}{}
+	conn.Close()
+
+	ch <- fmt.Sprintf("%s left\n", username)
 }
 
 func format(username string, text string) string {
