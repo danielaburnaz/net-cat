@@ -12,11 +12,41 @@ import (
 
 const (
 	ENTER_NAME = "[ENTER YOUR NAME]: "
+	BT         = "`"
+	TUX        = `
+Welcome to TCP-Chat!
+         _nnnn_
+        dGGGGMMb
+       @p~qp~~qMb
+       M|@||@) M|
+       @,----.JM|
+      JS^\__/  qKL
+     dZP        qKRb
+    dZP          qKKb
+   fZP            SMMb
+   HZM            MMMM
+   FqM            MMMM
+ __| ".        |\dS"qML
+ |    ` + BT + `.       | ` + BT + `' \Zq
+_)      \.___.,|     .'
+\____   )MMMMMP|   .'
+     ` + BT + `-'       ` + BT + `--'
+`
 )
 
-var connections []net.Conn
+var (
+	connections    []net.Conn
+	messageHistory []byte
+)
 
-// var maxConn = make(chan struct{}, 3)
+func removeConnection(conn net.Conn) {
+	for i, c := range connections {
+		if c == conn {
+			connections = append(connections[:i], connections[i+1:]...)
+			return
+		}
+	}
+}
 
 func main() {
 	arg := os.Args
@@ -39,10 +69,6 @@ func main() {
 
 	fmt.Printf("Listening on the port :%s\n", port)
 
-	// for i := 0; i < 3; i++ {
-	// 	maxConn <- struct{}{}
-	// }
-
 	ch := make(chan string)
 	go channelMessages(ch)
 	for {
@@ -51,12 +77,14 @@ func main() {
 			log.Println(err)
 		}
 		switch {
-		case len(connections) < 3:
-			go handleConnection(conn, ch)
+		case len(connections) < 11:
 			connections = append(connections, conn)
+			go handleConnection(conn, ch)
 		default:
+			conn.Write([]byte("Max connection reached\n"))
 			ch <- "User tried to join but max connection reached\n"
 			conn.Close()
+			removeConnection(conn)
 		}
 	}
 }
@@ -65,27 +93,29 @@ func channelMessages(ch chan string) {
 	for msg := range ch {
 		for _, conn := range connections {
 			conn.Write([]byte(msg))
+			messageHistory = append(messageHistory, []byte(msg)...)
 		}
 	}
 }
 
 func handleConnection(conn net.Conn, ch chan string) {
+	defer removeConnection(conn)
 	scanner := bufio.NewScanner(conn)
+	conn.Write([]byte(TUX))
+
 	username := name(conn, scanner)
 
+	conn.Write(messageHistory)
 	ch <- fmt.Sprintf("%s joined\n", username)
 
 	for scanner.Scan() {
 		if scanner.Text() != "" {
-			// fmt.Print(format(username, scanner.Text()))
+			log.Print(format(username, scanner.Text()))
 
 			ch <- format(username, scanner.Text())
 		}
 	}
-
-	// maxConn <- struct{}{}
 	conn.Close()
-
 	ch <- fmt.Sprintf("%s left\n", username)
 }
 
