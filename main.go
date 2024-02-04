@@ -91,9 +91,9 @@ func main() {
 
 func channelMessages(ch chan string) {
 	for msg := range ch {
+		messageHistory = append(messageHistory, []byte(msg)...)
 		for _, conn := range connections {
 			conn.Write([]byte(msg))
-			messageHistory = append(messageHistory, []byte(msg)...)
 		}
 	}
 }
