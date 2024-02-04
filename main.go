@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ENTER_NAME = "[ENTER YOUR NAME]: "
+	ENTER_NAME = "[ENTER YOUR NAME]: \n"
 	BT         = "`"
 	TUX        = `
 Welcome to TCP-Chat!
@@ -106,7 +106,7 @@ func handleConnection(conn net.Conn, ch chan string) {
 	username := name(conn, scanner)
 
 	conn.Write(messageHistory)
-	ch <- fmt.Sprintf("%s joined\n", username)
+	ch <- fmt.Sprintf("%s has joined our chat\n", username)
 
 	for scanner.Scan() {
 		if scanner.Text() != "" {
@@ -116,7 +116,7 @@ func handleConnection(conn net.Conn, ch chan string) {
 		}
 	}
 	conn.Close()
-	ch <- fmt.Sprintf("%s left\n", username)
+	ch <- fmt.Sprintf("%s has left our chat\n", username)
 }
 
 func format(username string, text string) string {
