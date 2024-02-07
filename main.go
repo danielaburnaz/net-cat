@@ -106,19 +106,25 @@ func handleConnection(conn net.Conn, ch chan string) {
 	username := name(conn, scanner)
 
 	conn.Write(messageHistory)
-	ch <- fmt.Sprintf("%s has joined our chat\n", username)
+
+	message(ch, fmt.Sprintf("%s has joined our chat\n", username))
 
 	for scanner.Scan() {
 		if scanner.Text() != "" {
-			log.Print(format(username, scanner.Text()))
-
-			ch <- format(username, scanner.Text())
+			message(ch, format(username, scanner.Text()))
 		}
 	}
 	conn.Close()
-	ch <- fmt.Sprintf("%s has left our chat\n", username)
+	message(ch, fmt.Sprintf("%s has left our chat\n", username))
 }
 
+// This function sends the message through the ch to clients and also prints it in the server side
+func message(ch chan string, str string) {
+	fmt.Print(str)
+	ch <- str
+}
+
+// Formats the username and date&time
 func format(username string, text string) string {
 	time := time.Now().Format(time.DateTime)
 	return fmt.Sprintf("[%s][%s]: %s\n", time, username, text)

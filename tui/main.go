@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"nc/connection"
 
@@ -82,7 +83,7 @@ func layout(g *gocui.Gui) error {
 		}
 		v.Title = "Chat"
 		v.Wrap = true
-		v.Autoscroll = true
+		// v.Autoscroll = true
 		v.Clear()
 	}
 
@@ -105,6 +106,21 @@ func layout(g *gocui.Gui) error {
 
 func keybindings(g *gocui.Gui, conn *connection.ChatConnection) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		return err
+	}
+
+	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			scroll(-1, g)
+			return nil
+		}); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone,
+		func(g *gocui.Gui, v *gocui.View) error {
+			scroll(1, g)
+			return nil
+		}); err != nil {
 		return err
 	}
 
@@ -137,5 +153,24 @@ func sendMessage(conn *connection.ChatConnection) func(g *gocui.Gui, v *gocui.Vi
 func inputEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 	if key != gocui.KeyEnter {
 		gocui.DefaultEditor.Edit(v, key, ch, mod)
+	}
+}
+
+func scroll(dy int, g *gocui.Gui) {
+	// Grab the view that we want to scroll.
+	v, _ := g.View("chat")
+
+	// Get the size and position of the view.
+	_, y := v.Size()
+	ox, oy := v.Origin()
+
+	// If we're at the bottom...
+	if oy+dy > strings.Count(v.ViewBuffer(), "\n")-y-1 {
+		// Set autoscroll to normal again.
+		v.Autoscroll = true
+	} else {
+		// Set autoscroll to false and scroll.
+		v.Autoscroll = false
+		v.SetOrigin(ox, oy+dy)
 	}
 }
