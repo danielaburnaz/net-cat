@@ -156,6 +156,7 @@ func inputEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
 	}
 }
 
+// thanks https://github.com/jroimartin/gocui/issues/84#issuecomment-261088194
 func scroll(dy int, g *gocui.Gui) {
 	// Grab the view that we want to scroll.
 	v, _ := g.View("chat")

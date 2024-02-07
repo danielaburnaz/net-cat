@@ -69,6 +69,9 @@ func main() {
 
 	fmt.Printf("Listening on the port :%s\n", port)
 
+	//I don't know where to call this function
+	defer logging(messageHistory)
+
 	ch := make(chan string)
 	go channelMessages(ch)
 	for {
@@ -87,6 +90,7 @@ func main() {
 			removeConnection(conn)
 		}
 	}
+
 }
 
 func channelMessages(ch chan string) {
@@ -107,19 +111,32 @@ func handleConnection(conn net.Conn, ch chan string) {
 
 	conn.Write(messageHistory)
 
-	message(ch, fmt.Sprintf("%s has joined our chat\n", username))
+	sendMessage(ch, fmt.Sprintf("%s has joined our chat\n", username))
 
 	for scanner.Scan() {
 		if scanner.Text() != "" {
-			message(ch, format(username, scanner.Text()))
+			sendMessage(ch, format(username, scanner.Text()))
 		}
 	}
 	conn.Close()
-	message(ch, fmt.Sprintf("%s has left our chat\n", username))
+	sendMessage(ch, fmt.Sprintf("%s has left our chat\n", username))
+}
+
+func logging(messageHistory []byte) {
+	f, err := os.Create("log.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = f.Write(messageHistory)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 // This function sends the message through the ch to clients and also prints it in the server side
-func message(ch chan string, str string) {
+func sendMessage(ch chan string, str string) {
 	fmt.Print(str)
 	ch <- str
 }
