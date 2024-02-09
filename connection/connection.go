@@ -1,3 +1,4 @@
+// common vars between the client and UI
 package connection
 
 import (
@@ -16,6 +17,7 @@ type ChatConnection struct {
 	Users []string
 }
 
+// Check os.Args specific port
 func ParseArgs(args []string) (string, error) {
 	if len(args) < 2 {
 		return "", nil
@@ -28,6 +30,7 @@ func ParseArgs(args []string) (string, error) {
 	return ip + ":" + port, nil
 }
 
+// Update Client UI to display new message/user
 func NewChatConnection(address string, onMessage func(string), onUsersUpdated func([]string)) (*ChatConnection, error) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
@@ -40,6 +43,7 @@ func NewChatConnection(address string, onMessage func(string), onUsersUpdated fu
 	return chatConnection, nil
 }
 
+// Check for new users/user left and read new messages
 func (c *ChatConnection) readMessages(onMessage func(string), onUsersUpdated func([]string)) {
 	scanner := bufio.NewScanner(c.conn)
 	for scanner.Scan() {
@@ -57,15 +61,18 @@ func (c *ChatConnection) readMessages(onMessage func(string), onUsersUpdated fun
 	}
 }
 
+// Close connection
 func (c *ChatConnection) Close() {
 	c.conn.Close()
 }
 
+// Send message
 func (c *ChatConnection) SendMessage(message string) error {
 	_, err := c.conn.Write([]byte(message + "\n"))
 	return err
 }
 
+// Remove user from the list once they leave
 func removeFromList(list []string, item string) []string {
 	for i, u := range list {
 		if u == item {

@@ -30,6 +30,7 @@ func main() {
 	}
 	defer conn.Close()
 
+	//Create layout for Client UI
 	g.SetManagerFunc(layout)
 
 	if err := keybindings(g, conn); err != nil {
@@ -41,6 +42,7 @@ func main() {
 	}
 }
 
+// Update UI on new message
 func onMessage(g *gocui.Gui) func(string) {
 	return func(msg string) {
 		chatView, _ := g.View("chat")
@@ -51,6 +53,7 @@ func onMessage(g *gocui.Gui) func(string) {
 	}
 }
 
+// Update UI on new user
 func onUsersUpdated(g *gocui.Gui) func([]string) {
 	return func(users []string) {
 		userListView, _ := g.View("userList")
@@ -64,6 +67,7 @@ func onUsersUpdated(g *gocui.Gui) func([]string) {
 	}
 }
 
+// Layout for UI
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 
@@ -104,11 +108,14 @@ func layout(g *gocui.Gui) error {
 	return nil
 }
 
+// Check keys pressed by user on interface
 func keybindings(g *gocui.Gui, conn *connection.ChatConnection) error {
+	// on ^C quit
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
 	}
 
+	// arrow keys to see chat history
 	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone,
 		func(g *gocui.Gui, v *gocui.View) error {
 			scroll(-1, g)
@@ -124,6 +131,7 @@ func keybindings(g *gocui.Gui, conn *connection.ChatConnection) error {
 		return err
 	}
 
+	// on enter send message
 	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, sendMessage(conn)); err != nil {
 		return err
 	}
@@ -135,6 +143,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
+// Send message from input field
 func sendMessage(conn *connection.ChatConnection) func(g *gocui.Gui, v *gocui.View) error {
 	return func(g *gocui.Gui, v *gocui.View) error {
 		inputView, _ := g.View("input")

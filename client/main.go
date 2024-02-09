@@ -45,8 +45,10 @@ func onMessage(msg string) {
 	fmt.Println(msg)
 }
 
+// Update user list
 func onUsersUpdated(users []string) {}
 
+// For /users format the user list
 func formatUserList(userList []string) string {
 	var users string
 	for i, user := range userList {
